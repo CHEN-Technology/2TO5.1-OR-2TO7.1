@@ -1,8 +1,11 @@
 import shutil
 import subprocess
-import os, sys, gc
+import os
+import sys
+import gc
 from pydub import AudioSegment
 from tkinter import Tk, filedialog
+
 
 def update_progress(current_step, total_steps):
     done = int(100 * current_step / total_steps)
@@ -10,14 +13,16 @@ def update_progress(current_step, total_steps):
     print(f"\r混音进度: [{progress_bar}] {done}%", end="")
     sys.stdout.flush()
 
+
 def finally_del(output_file, output_directory, channel_count):
     shutil.rmtree(os.path.join(output_directory, "htdemucs_ft"))
 
     print(f"\n音频已混音为 {channel_count}.1 通道并保存为 {output_file}")
 
+
 def remix_channels(input_dir, output_file, channel_count):
     print(f"开始混音为 {channel_count}.1 通道，由 {input_dir} 到 {output_file}")
-    
+
     total_steps = 5
     current_step = 0
 
@@ -39,7 +44,7 @@ def remix_channels(input_dir, output_file, channel_count):
                     if audio.channels == 2:  # 如果是立体声文件
                         left_channel = audio.split_to_mono()[0]
                         right_channel = audio.split_to_mono()[1]
-                        
+
                         mono_segments.append(left_channel)
                         mono_segments.append(right_channel)
                     else:
@@ -55,7 +60,7 @@ def remix_channels(input_dir, output_file, channel_count):
                     if audio.channels == 2:  # 如果是立体声文件
                         left_channel = audio.split_to_mono()[0]
                         right_channel = audio.split_to_mono()[1]
-                        
+
                         mono_segments.append(left_channel)
                         mono_segments.append(right_channel)
                     else:
@@ -63,7 +68,8 @@ def remix_channels(input_dir, output_file, channel_count):
                         mono_segments.append(audio.set_channels(1))
         else:
             print(f"文件 {channel_file} 不存在，跳过处理")
-            mono_segments.append(AudioSegment.silent(duration=0, frame_rate=48000))
+            mono_segments.append(AudioSegment.silent(
+                duration=0, frame_rate=48000))
 
     current_step += 1
     update_progress(current_step, total_steps)
@@ -76,7 +82,8 @@ def remix_channels(input_dir, output_file, channel_count):
     update_progress(current_step, total_steps)
 
     # 创建一个静音的声道音频对象（采样率 48kHz）
-    silence = AudioSegment.silent(duration=len(mono_segments[0]), frame_rate=48000)
+    silence = AudioSegment.silent(
+        duration=len(mono_segments[0]), frame_rate=48000)
 
     current_step += 1
     update_progress(current_step, total_steps)
@@ -106,7 +113,8 @@ def remix_channels(input_dir, output_file, channel_count):
     current_step += 1
     update_progress(current_step, total_steps)
 
-    mixed_audio = AudioSegment.from_mono_audiosegments(*mono_segments).set_channels(channel_count + 1)
+    mixed_audio = AudioSegment.from_mono_audiosegments(
+        *mono_segments).set_channels(channel_count + 1)
 
     current_step += 1
     update_progress(current_step, total_steps)
@@ -124,39 +132,23 @@ def remix_channels(input_dir, output_file, channel_count):
 
     gc.collect()
 
-# def separate_audio(input_file, output_dir, real_output_directory, hardware_choice, segment_choice, segment):
-#     print(f"分离音频文件: {input_file} 到 {output_dir}")
-#     os.environ["TORCH_HOME"] = "./model"
-#     if hardware_choice == "1":
-#         os.environ["PYTORCH_NO_CUDA_MEMORY_CACHING"] = "0"
-#         if segment_choice == "1":
-#             os.environ["PYTORCH_NO_CUDA_MEMORY_CACHING"] = "1"
-#             args = ["demucs", "-n", "htdemucs_ft", "-o", output_dir, input_file, "--float32", "--segment", "7"]
-#         elif segment_choice == "2":
-#             args = ["demucs", "-n", "htdemucs_ft", "-o", output_dir, input_file, "--float32", "--segment", "7"]
-#         elif segment_choice == "3":
-#             args = ["demucs", "-n", "htdemucs_ft", "-o", output_dir, input_file, "--float32"]
-#         elif segment_choice == "4":
-#             args = ["demucs", "-n", "htdemucs_ft", "-o", output_dir, input_file, "--float32", "--segment", segment]
-#     elif hardware_choice == "2":
-#         args = ["demucs", "-n", "htdemucs_ft", "-o", output_dir, input_file, "----float32", "-d", "cpu"]
-#     print(f"执行命令: {' '.join(args)}")
-#     subprocess.run(args, check=True)
-#     print(f"音频文件已分离到: {real_output_directory}")
 
 def separate_audio(input_file, output_dir, real_output_directory, hardware_choice):
     print(f"分离音频文件: {input_file} 到 {output_dir}")
     os.environ["TORCH_HOME"] = "./model"
     if hardware_choice == "1":
         os.environ["PYTORCH_NO_CUDA_MEMORY_CACHING"] = "0"
-        args = ["demucs", "-n", "htdemucs_ft", "-o", output_dir, input_file, "--float32"]
+        args = [".\\Python\\python", "-m", "demucs", "-n", "htdemucs_ft", "-o",
+                output_dir, input_file, "--float32"]
     elif hardware_choice == "2":
-        args = ["demucs", "-n", "htdemucs_ft", "-o", output_dir, input_file, "--float32", "-d", "cpu"]
+        args = [".\\Python\\python", "-m", "demucs", "-n", "htdemucs_ft", "-o",
+                output_dir,  input_file, "--float32", "-d", "cpu"]
     print(f"执行命令: {' '.join(args)}")
     result = subprocess.run(args, check=True)
     print(f"音频文件已分离到: {real_output_directory}")
 
     gc.collect()
+
 
 def main():
     print("立体声转5.1声道&7.1声道混音工具 v1.0 by 陈缘科技")
@@ -169,38 +161,24 @@ def main():
         print("\n输入错误，请重新输入")
         main()
 
-    # segment_choice = input("请选择您的显存大小以确定分段大小: \n1. 3G 以下\n2. 3G\n3. 3G 以上 (默认分段大小, 推荐)\n4. 自定义(1 ~ 7 整数, 越大质量越好)\n> ")
-
-    # if segment_choice not in ["1", "2", "3", "4"]:
-    #     print("\n输入错误，请重新输入")
-    #     main()
-
-    # if segment_choice == "4":
-    #     segment = input("请输入分段大小:\n> ")
-    #     if not ["1", "2", "3", "4", "5", "6", "7"]:
-    #         print("\n输入错误，请重新输入")
-    #         main()
-
     choice = input("请选择混音模式：\n1. 2 TO 5.1\n2. 2 TO 7.1\n> ")
     if choice not in ["1", "2"]:
         print("\n输入错误，请重新输入")
         main()
-
-    # debug
-    # input_directory = "C:/Users/Administrator/Desktop/test/input"
-    # output_directory = "C:/Users/Administrator/Desktop/test/res"
 
     # 创建Tk实例并隐藏主窗口
     root = Tk()
     root.withdraw()
 
     print("请选择需要转换的音频文件所在目录")
-    input_directory = filedialog.askdirectory(title="选择音频文件所在目录", initialdir=".")
+    input_directory = filedialog.askdirectory(
+        title="选择音频文件所在目录", initialdir=".")
     print("请选择输出目录")
     output_directory = filedialog.askdirectory(title="选择输出目录", initialdir=".")
 
     for filename in os.listdir(input_directory):
-        real_output_directory = os.path.join(output_directory, "htdemucs_ft", filename.split(".")[0])
+        real_output_directory = os.path.join(
+            output_directory, "htdemucs_ft", filename.split(".")[0])
 
         isfull = False
 
@@ -209,13 +187,14 @@ def main():
             if os.path.isfile(os.path.join(real_output_directory, sound)):
                 isfull = True
                 print(f"{filename} 分离音频文件 {sound} 已存在，跳过分离")
-        
+
         if not isfull:
-            # separate_audio(os.path.join(input_directory, filename), output_directory, real_output_directory, hardware_choice, segment_choice, segment)
-            separate_audio(os.path.join(input_directory, filename), output_directory, real_output_directory, hardware_choice)
+            separate_audio(os.path.join(input_directory, filename),
+                           output_directory, real_output_directory, hardware_choice)
 
         if choice == "1":
-            output_file = os.path.join(output_directory, filename.split(".")[0] + "_5.1.flac")
+            output_file = os.path.join(
+                output_directory, filename.split(".")[0] + "_5.1.flac")
             if not os.path.isfile(output_file):
                 remix_channels(real_output_directory, output_file, 5)
             else:
@@ -223,7 +202,8 @@ def main():
                 continue
             finally_del(output_file, output_directory, 5)
         elif choice == "2":
-            output_file = os.path.join(output_directory, filename.split(".")[0] + "_7.1.flac")
+            output_file = os.path.join(
+                output_directory, filename.split(".")[0] + "_7.1.flac")
             if not os.path.isfile(output_file):
                 remix_channels(real_output_directory, output_file, 7)
             else:
@@ -232,6 +212,7 @@ def main():
             finally_del(output_file, output_directory, 7)
 
         gc.collect()
+
 
 if __name__ == '__main__':
     main()
